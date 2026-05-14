@@ -1,0 +1,98 @@
+Slip 20
+Q.1) Practical Questions on PostgresSQL Consider the following database Property (pno, description, area)
+Owner (oname, address, phone)
+An owner can have one or more properties, but a property belongs to exactly one owner. Create
+the relations accordingly, so that the relationship is handled properly and the relations are
+handled properly and the relations are in normalized form (3NF).
+
+CREATE TABLE Owner (
+owner_id SERIAL PRIMARY KEY, oname VARCHAR(30),
+address VARCHAR(50), phone VARCHAR(15)
+);
+
+CREATE TABLE Property ( pno INT PRIMARY KEY,
+description VARCHAR(50), area VARCHAR(30),
+owner_id INT,
+FOREIGN KEY (owner_id) REFERENCES Owner(owner_id)
+);
+
+
+Using above database, solve the following queries:
+1.	List details of property where area is ‘Moshi’
+2.	List the owners detail.
+3.	List property details owned by ‘Mr. Kadam’
+4.	Update phone no of ‘Mr. Patil’ to 987842621
+
+
+
+
+1⃣ List details of property where area is ‘Moshi’
+SELECT *
+FROM Property
+WHERE area = 'Moshi';
+
+ 
+2⃣ List the owners detail
+SELECT *
+FROM Owner;
+
+
+
+3⃣ List property details owned by ‘Mr. Kadam’
+SELECT P.*
+FROM Property P, Owner O WHERE P.owner_id = O.owner_id AND O.oname = 'Mr. Kadam';
+
+
+
+4⃣ Update phone no of ‘Mr. Patil’ to 987842621
+UPDATE Owner
+SET phone = '987842621'
+WHERE oname = 'Mr. Patil';
+
+
+
+Q2) Using above database solve following questions:
+1.	Write a trigger before inserting description into a Property table; that area should in Pune. Display appropriate message.
+
+CREATE OR REPLACE FUNCTION check_area_pune() RETURNS TRIGGER
+LANGUAGE plpgsql AS $$
+BEGIN
+-- Check if area is Pune IF NEW.area <> 'Pune' THEN
+RAISE EXCEPTION 'Area must be Pune'; ELSE
+RAISE NOTICE 'Property inserted in Pune area'; END IF;
+
+RETURN NEW;
+END;
+$$;
+ 
+CREATE TRIGGER trg_before_insert_property BEFORE INSERT ON Property
+FOR EACH ROW
+EXECUTE FUNCTION check_area_pune(); Output
+INSERT INTO Property VALUES (101,'Flat','Pune',1);	-- ✅
+Allowed
+INSERT INTO Property VALUES (102,'Shop','Mumbai',1); -- ❌ Error
+
+
+2.	Write a cursor to list the details of all Owners.
+
+
+DO $$ DECLARE
+rec RECORD;
+
+owner_cursor CURSOR FOR SELECT * FROM Owner;
+BEGIN
+OPEN owner_cursor;
+
+LOOP
+FETCH owner_cursor INTO rec; EXIT WHEN NOT FOUND;
+
+RAISE NOTICE 'Name: %, Address: %, Phone: %', rec.oname, rec.address, rec.phone;
+END LOOP;
+
+CLOSE owner_cursor;
+END;
+$$;
+
+Output
+
+NOTICE: Name: Mr. Patil, Address: Pune, Phone: 987842621 NOTICE: Name: Mr. Kadam, Address: Mumbai, Phone: 987654321
