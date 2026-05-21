@@ -1,0 +1,332 @@
+ Xbee Transmission Code 
+#include <SoftwareSerial.h> 
+//XBee TX → Arduino pin 3 
+//XBee RX → Arduino pin 4 
+SoftwareSerial xbee(3, 4);  
+void setup() { 
+Serial.begin(9600);     // PC Monitor 
+xbee.begin(9600);       // XBee communication 
+} 
+void loop() { 
+xbee.println("Hello ZigBee!"); 
+Serial.println("Sent: Hello ZigBee!"); 
+delay(2000); 
+} 
+ Reciver Code 
+#include <SoftwareSerial.h> 
+//XBee TX → Arduino pin 3 
+//XBee RX → Arduino pin 4 
+SoftwareSerial xbee(3, 4);  
+void setup() { 
+Serial.begin(9600);   // PC Monitor 
+xbee.begin(9600);     // XBee communication 
+} 
+void loop() { 
+if (xbee.available()) { 
+String data = xbee.readStringUntil('\n'); 
+data.trim(); 
+Serial.print("Received: "); 
+Serial.println(data); 
+} 
+} 
+ Streetlight Transmission Code 
+// TRANSMITTER NODE - LDR SENSOR (Using SoftwareSerial) 
+#include <SoftwareSerial.h> 
+//XBee TX → Arduino pin 3 
+//XBee RX → Arduino pin 4 
+SoftwareSerial xbee(3, 4);   // RX, TX 
+int LDR = A0; 
+int value = 0; 
+void setup() { 
+Serial.begin(9600);   // PC Monitor 
+xbee.begin(9600);     // XBee communication 
+} 
+void loop() { 
+value = analogRead(LDR); 
+// Send value via XBee 
+xbee.println(value); 
+// Also print on Serial Monitor 
+Serial.print("Sent LDR Value: "); 
+Serial.println(value); 
+delay(1000); 
+} 
+ Reciver Code 
+// RECEIVER NODE - STREET LIGHT CONTROL 
+// Using SoftwareSerial 
+#include <SoftwareSerial.h> 
+//XBee TX → Arduino pin 3 
+//XBee RX → Arduino pin 4 
+SoftwareSerial xbee(3, 4);   // TX, RX 
+int LED = 6; 
+int sensorValue = 0; 
+void setup() { 
+Serial.begin(9600);   // PC Monitor 
+xbee.begin(9600);     // XBee communication 
+pinMode(LED, OUTPUT); 
+} 
+void loop() { 
+if (xbee.available()) { 
+sensorValue = xbee.parseInt(); 
+Serial.print("Received LDR Value: "); 
+Serial.println(sensorValue); 
+if (sensorValue < 500) {      // Night condition 
+digitalWrite(LED, HIGH);    // Street Light ON 
+Serial.println("Street Light ON"); 
+}  
+else {                        // Day condition 
+digitalWrite(LED, LOW);     // Street Light OFF 
+Serial.println("Street Light OFF"); 
+} 
+} 
+} 
+ ENV Transmission Code 
+ 
+// ENV_Tx  (DHT11 + XBee) 
+ 
+#include <SoftwareSerial.h> 
+#include <DHT.h> 
+ 
+#define DHTPIN 7 
+#define DHTTYPE DHT11 
+ 
+DHT dht(DHTPIN, DHTTYPE); 
+ 
+//XBee TX → Arduino pin 3 
+//XBee RX → Arduino pin 4 
+SoftwareSerial xbee(3, 4);  // RX, TX 
+ 
+void setup() { 
+  Serial.begin(9600);   // PC Monitor 
+  xbee.begin(9600);     // XBee 
+  dht.begin(); 
+} 
+ 
+void loop() { 
+ 
+  float humidity = dht.readHumidity(); 
+  float temperature = dht.readTemperature(); 
+ 
+  // Check if reading failed 
+  if (isnan(humidity) || isnan(temperature)) { 
+    Serial.println("DHT Read Failed!"); 
+    return; 
+  } 
+ 
+  // Send data via XBee 
+  xbee.print("T:"); 
+  xbee.print(temperature); 
+  xbee.print(" H:"); 
+  xbee.println(humidity); 
+ 
+  // Also print on PC 
+  Serial.print("Sent -> T:"); 
+  Serial.print(temperature); 
+  Serial.print(" H:"); 
+  Serial.println(humidity); 
+ 
+  delay(2000); 
+} 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ Reciver Code 
+// ENV_Rx  (XBee Receiver) 
+#include <SoftwareSerial.h> 
+//XBee TX → Arduino pin 3 
+//XBee RX → Arduino pin 4 
+SoftwareSerial xbee(3, 4);  // RX, TX 
+String data = ""; 
+void setup() { 
+Serial.begin(9600);   // PC Monitor 
+xbee.begin(9600);     
+} 
+void loop() { 
+// XBee 
+if (xbee.available()) { 
+data = xbee.readStringUntil('\n'); 
+data.trim(); 
+Serial.print("Received Data: "); 
+Serial.println(data); 
+} 
+} 
+ Security Transmission Code 
+// TRANSMITTER NODE - PIR MOTION SENSOR 
+// Using SoftwareSerial for XBee 
+#include <SoftwareSerial.h> 
+//XBee TX → Arduino pin 3 
+//XBee RX → Arduino pin 4 
+SoftwareSerial xbee(3, 4);   // RX, TX 
+int pirPin = 7; 
+int lastState = LOW; 
+void setup() { 
+pinMode(pirPin, INPUT); 
+Serial.begin(9600);   // PC Monitor 
+xbee.begin(9600);     // XBee communication 
+Serial.println("PIR Transmitter Started"); 
+delay(2000);  // PIR stabilization 
+} 
+void loop() { 
+int sensorValue = digitalRead(pirPin); 
+// Send only when state changes (prevents spamming) 
+if (sensorValue != lastState) { 
+if (sensorValue == HIGH) { 
+xbee.println("INTRUDER_ALERT"); 
+Serial.println("Motion Detected! Alert Sent."); 
+}  
+else { 
+xbee.println("AREA_CLEAR"); 
+Serial.println("Area Clear."); 
+} 
+lastState = sensorValue; 
+} 
+delay(200); 
+} 
+ Reciver Code 
+// RECEIVER NODE - SECURITY ALARM SYSTEM 
+// Using SoftwareSerial for XBee 
+#include <SoftwareSerial.h> 
+//XBee TX → Arduino pin 3 
+//XBee RX → Arduino pin 4 
+SoftwareSerial xbee(3, 4);   // RX, TX 
+int redLED = 6; 
+int buzzer = 7;      // Active LOW buzzer 
+int greenLED = 5; 
+String receivedMessage = ""; 
+void setup() { 
+Serial.begin(9600);   // PC Monitor 
+xbee.begin(9600);     // XBee 
+pinMode(redLED, OUTPUT); 
+pinMode(buzzer, OUTPUT); 
+pinMode(greenLED, OUTPUT); 
+// Initial Safe State 
+digitalWrite(redLED, LOW); 
+digitalWrite(greenLED, HIGH); 
+digitalWrite(buzzer, HIGH);   // OFF (Active LOW) 
+Serial.println("Receiver Ready"); 
+} 
+void loop() { 
+if (xbee.available()) { 
+receivedMessage = xbee.readStringUntil('\n'); 
+receivedMessage.trim(); 
+Serial.print("Received: "); 
+Serial.println(receivedMessage); 
+if (receivedMessage == "INTRUDER_ALERT") { 
+activateAlarm(); 
+}  
+else if (receivedMessage == "AREA_CLEAR") { 
+deactivateAlarm(); 
+} 
+} 
+} 
+void activateAlarm() { 
+digitalWrite(redLED, HIGH); 
+digitalWrite(greenLED, LOW); 
+digitalWrite(buzzer, LOW);   // ON (Active LOW) 
+} 
+void deactivateAlarm() { 
+digitalWrite(redLED, LOW); 
+digitalWrite(greenLED, HIGH); 
+digitalWrite(buzzer, HIGH);  // OFF 
+} 
+ Door control Transmission Code 
+ 
+// TX - Ultrasonic Door Control (Using SoftwareSerial) 
+ 
+#include <SoftwareSerial.h> 
+ 
+#define trigPin 5 
+#define echoPin 6 
+ 
+//XBee TX → Arduino pin 3 
+//XBee RX → Arduino pin 4 
+ 
+SoftwareSerial xbee(3, 4);   // RX, TX 
+ 
+void setup() { 
+  pinMode(trigPin, OUTPUT); 
+  pinMode(echoPin, INPUT); 
+ 
+  Serial.begin(9600);   // PC Monitor 
+  xbee.begin(9600);     // XBee 
+} 
+ 
+void loop() { 
+ 
+  long duration; 
+  int distance; 
+ 
+  // Trigger ultrasonic pulse 
+  digitalWrite(trigPin, LOW); 
+  delayMicroseconds(2); 
+ 
+  digitalWrite(trigPin, HIGH); 
+  delayMicroseconds(10); 
+ 
+  digitalWrite(trigPin, LOW); 
+ 
+  duration = pulseIn(echoPin, HIGH); 
+  distance = duration * 0.034 / 2; 
+ 
+  Serial.print("Distance: "); 
+  Serial.println(distance); 
+ 
+  if (distance > 0 && distance < 20) { 
+    xbee.println("OPEN"); 
+    Serial.println("Command Sent: OPEN"); 
+  } else { 
+    xbee.println("CLOSE"); 
+    Serial.println("Command Sent: CLOSE"); 
+  } 
+ 
+  delay(1000); 
+} 
+ 
+ 
+ 
+ Reciver Code 
+ 
+// RX - Servo Door Control (Using SoftwareSerial) 
+ 
+#include <SoftwareSerial.h> 
+#include <Servo.h> 
+ 
+//XBee TX → Arduino pin 3 
+//XBee RX → Arduino pin 4 
+SoftwareSerial xbee(3, 4);   // RX, TX 
+Servo doorServo; 
+ 
+String data = ""; 
+ 
+void setup() { 
+  doorServo.attach(8); 
+ 
+  Serial.begin(9600);   // PC Monitor 
+  xbee.begin(9600);     // XBee 
+ 
+  doorServo.write(0);   // Initially closed 
+} 
+ 
+void loop() { 
+ 
+  if (xbee.available()) { 
+ 
+    data = xbee.readStringUntil('\n'); 
+    data.trim(); 
+ 
+    Serial.print("Received: "); 
+    Serial.println(data); 
+ 
+    if (data == "OPEN") { 
+      doorServo.write(90);   // Open door 
+    }  
+    else if (data == "CLOSE") { 
+      doorServo.write(0);    // Close door 
+    } 
+  } 
+} 
+ 
